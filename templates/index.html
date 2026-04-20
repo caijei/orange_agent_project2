@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>脐橙知识问答系统</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">🍊</span>
+                <div>
+                    <h1 class="site-title">脐橙知识问答系统</h1>
+                    <p class="site-subtitle">基于Agent的农业知识问答 · 本科毕业设计</p>
+                </div>
+            </div>
+            <button class="btn-clear" id="btnClear" title="清空对话">🗑 清空对话</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h3 class="sidebar-title">📚 知识领域</h3>
+            <ul class="topic-list" id="topicList">
+                <!-- Populated by JS -->
+            </ul>
+            <div class="sidebar-tip">
+                <p>💡 <strong>提问示例：</strong></p>
+                <ul class="example-list">
+                    <li onclick="fillQuestion('纽荷尔脐橙有哪些特点？')">纽荷尔脐橙有哪些特点？</li>
+                    <li onclick="fillQuestion('脐橙黄龙病如何防治？')">脐橙黄龙病如何防治？</li>
+                    <li onclick="fillQuestion('脐橙什么时候施肥最好？')">脐橙什么时候施肥？</li>
+                    <li onclick="fillQuestion('脐橙的营养价值有哪些？')">脐橙的营养价值？</li>
+                    <li onclick="fillQuestion('赣南脐橙产区在哪里？')">赣南脐橙产区？</li>
+                    <li onclick="fillQuestion('帮我估算10亩脐橙年收益，亩产4000公斤，价格4元/公斤')">计算种植收益</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Chat area -->
+        <main class="chat-area">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="avatar">🍊</div>
+                    <div class="bubble">
+                        <p>您好！我是脐橙知识问答助手，我可以为您解答关于脐橙的各类问题，包括：</p>
+                        <ul>
+                            <li>🌿 品种特性与选种建议</li>
+                            <li>🌱 栽培管理技术（施肥、修剪、灌溉等）</li>
+                            <li>🐛 病虫害识别与防治</li>
+                            <li>💊 营养价值与食用建议</li>
+                            <li>📈 市场行情与产业发展</li>
+                            <li>🌤️ 生长环境与气候要求</li>
+                        </ul>
+                        <p>请直接输入您的问题，我会尽力为您解答！</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <textarea
+                    id="userInput"
+                    class="chat-input"
+                    placeholder="请输入关于脐橙的问题..."
+                    rows="2"
+                    maxlength="1000"
+                ></textarea>
+                <button class="btn-send" id="btnSend">发送</button>
+            </div>
+            <div class="input-hint">按 Enter 发送，Shift+Enter 换行</div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
