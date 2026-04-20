@@ -1,0 +1,11 @@
+langchain
+langchain-community
+chromadb
+fastapi
+uvicorn
+python-multipart
+dashscope
+pymupdf
+python-docx
+tavily-python
+python-dotenv

@@ -1,0 +1,19 @@
+# ===== 前端 =====
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# ===== 后端 =====
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/temp_images/
+backend/chroma_db/
+
+#文件
+
+docs/
+docs_clean/
+# ===== 系统文件 =====
+.DS_Store                    
+Thumbs.db                    

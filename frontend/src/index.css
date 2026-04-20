@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 整个页面的底色 */
+body {
+  background-color: #f3f4f6; 
+}
