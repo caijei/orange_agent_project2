@@ -96,9 +96,10 @@ def calculate_yield_estimate(area_mu: float, yield_per_mu: float, price_per_kg: 
     """
     total_yield = area_mu * yield_per_mu
     total_revenue = total_yield * price_per_kg
-    # Rough cost estimate: 3700-7000 yuan per mu, use midpoint
-    cost_per_mu = 5000
-    total_cost = area_mu * cost_per_mu
+    # Average cost estimate based on standard navel orange orchard management
+    # (range: 3700-7000 yuan/mu depending on region and practices; midpoint used)
+    AVERAGE_COST_PER_MU = 5000
+    total_cost = area_mu * AVERAGE_COST_PER_MU
     profit = total_revenue - total_cost
     return (
         f"收益估算结果：\n"

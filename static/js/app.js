@@ -32,7 +32,6 @@ function simpleMarkdown(text) {
     const result = [];
     let inUl = false;
     let inOl = false;
-    let olIdx = 0;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
