@@ -119,6 +119,8 @@ class VectorKnowledgeBase:
 假设答案："""
         try:
             hypothetical = self.call_llm(prompt, temperature=0.1)
+            print("原问题：", question)
+            print("HyDE 假设答案：", hypothetical)
             if not hypothetical:
                 return self.search_docs(question, k=top_k)
             return self.vectordb.similarity_search(hypothetical, k=top_k)
@@ -633,6 +635,13 @@ class KnowledgeQATool(BaseTool):
         except Exception:
             docs = self.kb.search_docs(rewritten_query)
 
+        print("\n========== 本次检索命中内容 ==========")
+        print("原问题：", query)
+        print("改写后问题：", rewritten_query)
+        for i, doc in enumerate(docs, 1):
+            print(f"\n--- 命中 chunk {i} ---")
+            print(doc.page_content)
+            print(doc.metadata)
         if not docs:
             answer = "知识库中没有找到相关信息。"
             self.save_history(query, answer)

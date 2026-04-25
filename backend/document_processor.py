@@ -357,20 +357,33 @@ class DocumentProcessor:
                 if not content:
                     continue
 
+                h1 = str(record.get('h1', '')).strip()
+                h2 = str(record.get('h2', '')).strip()
+                h3 = str(record.get('h3', '')).strip()
+
+                title_parts = [part for part in [h1, h2, h3] if part]
+                title_path = ' > '.join(title_parts)
+
+                search_text = content
+                if title_path:
+                    search_text = f'标题：{title_path}\n正文：{content}'
+
                 metadata = {
                     'chunk_id': record.get('chunk_id', ''),
                     'source_file': record.get('source_file', json_file.name),
                     'section_index': record.get('section_index', 0),
                     'chunk_index': record.get('chunk_index', 0),
                     'section_chunk_index': record.get('section_chunk_index', 0),
-                    'h1': record.get('h1', ''),
-                    'h2': record.get('h2', ''),
-                    'h3': record.get('h3', '')
+                    'h1': h1,
+                    'h2': h2,
+                    'h3': h3,
+                    'title_path': title_path,
+                    'raw_content': content
                 }
 
                 documents.append(
                     LangchainDocument(
-                        page_content=content,
+                        page_content=search_text,
                         metadata=metadata
                     )
                 )
@@ -378,6 +391,154 @@ class DocumentProcessor:
         print(f'从 {directory} 读取到 {len(json_files)} 个 chunk 文件，共 {len(documents)} 个文本块')
         self._persist_documents(documents)
 
+    def add_documents_to_vectorstore(self, chunk_dir: str):
+        """
+        增量入库：在保留原有知识库的基础上，新增 chunk 数据。
+        自动跳过 chunk_id 已存在的条目，避免重复。
+        """
+        directory = Path(chunk_dir)
+        if not directory.exists():
+            raise FileNotFoundError(f'找不到 chunk 目录: {directory}')
+
+        json_files = sorted(directory.glob('*.json'))
+        if not json_files:
+            raise ValueError(f'{directory} 中没有可用的 JSON chunk 文件。')
+
+        self._ensure_api_key()
+
+        # ── 加载已有向量库（不清空）──────────────────────────
+        vectorstore = Chroma(
+            persist_directory=self.persist_directory,
+            embedding_function=self.embeddings,
+            collection_name=self.collection_name,
+        )
+
+        # ── 获取已有的 chunk_id 集合，用于去重 ───────────────
+        existing = vectorstore.get(include=["metadatas"])
+        existing_ids = {
+            m.get("chunk_id")
+            for m in existing["metadatas"]
+            if m.get("chunk_id")
+        }
+        print(f'当前知识库已有 {len(existing_ids)} 个 chunk')
+
+        # ── 读取新 chunk，过滤重复 ────────────────────────────
+        new_documents = []
+        skipped = 0
+
+        for json_file in json_files:
+            try:
+                records = json.loads(json_file.read_text(encoding='utf-8'))
+            except json.JSONDecodeError as e:
+                print(f'跳过格式错误文件: {json_file}，原因: {e}')
+                continue
+
+            for record in records:
+                chunk_id = record.get('chunk_id', '')
+
+                if chunk_id in existing_ids:
+                    skipped += 1
+                    continue
+
+                content = str(record.get('content', '')).strip()
+                if not content:
+                    continue
+
+                h1 = str(record.get('h1', '')).strip()
+                h2 = str(record.get('h2', '')).strip()
+                h3 = str(record.get('h3', '')).strip()
+                title_parts = [p for p in [h1, h2, h3] if p]
+                title_path = ' > '.join(title_parts)
+
+                search_text = f'标题：{title_path}\n正文：{content}' if title_path else content
+
+                metadata = {
+                    'chunk_id': chunk_id,
+                    'source_file': record.get('source_file', json_file.name),
+                    'section_index': record.get('section_index', 0),
+                    'chunk_index': record.get('chunk_index', 0),
+                    'section_chunk_index': record.get('section_chunk_index', 0),
+                    'h1': h1, 'h2': h2, 'h3': h3,
+                    'title_path': title_path,
+                    'raw_content': content,
+                }
+
+                new_documents.append(
+                    LangchainDocument(page_content=search_text, metadata=metadata)
+                )
+
+        print(f'跳过已有 chunk: {skipped} 个，准备新增: {len(new_documents)} 个')
+
+        if not new_documents:
+            print('没有需要新增的内容，知识库保持不变。')
+            return
+
+        # ── 增量写入 ──────────────────────────────────────────
+        vectorstore.add_documents(new_documents)
+        print(f'✅ 增量入库完成，新增 {len(new_documents)} 个 chunk')
+
+    def add_chunks_from_markdown(self, markdown_dir: str):
+        """
+        增量转换：将新 Markdown 文件转为 JSON chunk，
+        已存在对应 JSON 的文件自动跳过，不删除任何旧文件。
+        """
+        directory = Path(markdown_dir)
+        if not directory.exists():
+            raise FileNotFoundError(f'找不到 markdown 目录: {directory}')
+
+        markdown_files = sorted(directory.glob('*.md'))
+        if not markdown_files:
+            raise ValueError(f'{directory} 中没有可用的 Markdown 文件。')
+
+        output_dir = Path(self.chunk_output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)  # 不清空，只确保目录存在
+
+        skipped = []
+        converted = []
+
+        for markdown_file in markdown_files:
+            output_file = output_dir / f'{markdown_file.stem}.json'
+
+            # 已有对应 JSON 则跳过
+            if output_file.exists():
+                skipped.append(markdown_file.name)
+                continue
+
+            text = markdown_file.read_text(encoding='utf-8')
+            sections = self._parse_markdown_sections(text)
+
+            chunk_records = []
+            chunk_counter = 1
+
+            for section_index, section in enumerate(sections, start=1):
+                section_chunks = self._split_long_text(section['content'])
+
+                for inner_index, chunk_text in enumerate(section_chunks, start=1):
+                    chunk_records.append({
+                        'chunk_id': f'{markdown_file.stem}_{chunk_counter}',
+                        'source_file': markdown_file.name,
+                        'section_index': section_index,
+                        'chunk_index': chunk_counter,
+                        'section_chunk_index': inner_index,
+                        'h1': section['h1'],
+                        'h2': section['h2'],
+                        'h3': section['h3'],
+                        'content': chunk_text
+                    })
+                    chunk_counter += 1
+
+            output_file.write_text(
+                json.dumps(chunk_records, ensure_ascii=False, indent=2),
+                encoding='utf-8'
+            )
+
+            converted.append(markdown_file.name)
+            print(f'✅ {markdown_file.name} → {len(chunk_records)} 个 chunk → {output_file.name}')
+
+        # ── 汇总 ──────────────────────────────────────────────
+        print(f'\n转换完成：新增 {len(converted)} 个文件，跳过 {len(skipped)} 个已有文件')
+        if skipped:
+            print(f'跳过文件：{", ".join(skipped)}')
 
 if __name__ == '__main__':
     processor = DocumentProcessor()
@@ -392,8 +553,13 @@ if __name__ == '__main__':
         os.path.join(base_dir, '.', 'chunks')
     )
 
-    # 第一步：生成 chunk 文件，手动修改
-    processor.generate_chunks_from_markdown_directory(markdown_dir)
+    # 第一步：生成 chunk 文件，手动修改。会删除原有json文件
+    #processor.generate_chunks_from_markdown_directory(markdown_dir)
 
-    # 第二步：手动修改 chunks 目录中的 json 后，再取消下面这行注释执行入库
+    # 第二步：手动修改 chunks 目录中的 json 后，再取消下面这行注释执行入库。会删除原有数据库
     #processor.build_vectorstore_from_chunk_directory(chunk_dir)
+
+    # 第一步：新 Markdown → 新 JSON（不动旧 JSON）
+    processor.add_chunks_from_markdown('../docs_clean/markdown')
+    # 新增知识库（不影响已有数据）
+    processor.add_documents_to_vectorstore('./chunks')
