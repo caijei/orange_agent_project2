@@ -9,3 +9,5 @@ pymupdf
 python-docx
 tavily-python
 python-dotenv
+openai
+requests

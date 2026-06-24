@@ -1,0 +1,886 @@
+
+
+--- Page 1 ---
+基于 ChatGLM 2 - 6 B 的农业政策问答系统
+韦一金
+1 , 2
+， 樊景超
+1 , 2 *
+1 . 中国农业科学院农业信息研究所 ， 北京 100081
+2 . 国家农业科学数据中心 ， 北京 100081
+摘 要 ： 【 目的 】 为了提高政策的透明度 、 降低信息不对称 ， 为利益相关者提供一个获得农业政策信
+息与指导的便捷途径 ， 本文构建了结合 ChatGLM 2 - 6 B 和 Langchain-Chatchat 的农业政策问
+答系统 。 【 方法 】 通过爬虫获取国家乡村振兴局公示的农业政策全文和中央一号等指导性农
+业政策全文以及黄河九省乡村振兴局农业政策全文 ， 构建农业政策问答数据集 ， 利用该数
+据集对 ChatGLM 2 - 6 B 模型进行 QLoRA 微调及模型合并量化 ， 然后将得到的 ChatGLM 2 -
+6 B-QLoRA-int 4 模型与 Langchain-Chatchat 及本地农业政策知识库结合构建农业政策问答
+系统 。 【 结果 】 对 ChatGPT 、 ChatGLM 2 - 6 B 、 ChatGLM 2 - 6 B-QLoRA 和本问答系统分别进行提
+问 ， 对回答结果采用专家打分法进行评价 ， 本系统在农业政策专业领域中回答评分优于
+ChatGLM 2 - 6 B 、 ChatGLM 2 - 6 B-QLoRA ， 综合效果而言优于 ChatGPT 。 【 结论 】 本研究所构建
+问答系统在农业政策领域表现较好 ， 能确保专有数据安全 ， 可以实现基于 LLM 的问答系统
+本地部署 。
+关键词 ： 大语言模型 （ LLM ） ； 农业 ； 政策 ； 问答系统 ； 垂直领域
+An Agricultural Policy Question Answering System
+Based on ChatGLM 2 - 6 B
+WEI Yijin
+1 , 2
+, FAN Jingchao
+1 , 2 *
+1 . Agriculture Information Institution of CAAS , Beijing 100081 , China
+2 . National Agriculture Science Data Center , Beijing 100081 , China
+Abstract: [ Objective ] In order to improve the transparency of the policy, reduce the information asymme -
+try, and provide a convenient way for stakeholders to obtain agricultural policy information and
+guidance, this paper constructs an agricultural policy question answering system based on Chat -
+GLM 2 - 6 B and Langchain-Chatchat. [ Methods ] To construct the agricultural policy question an -
+swering dataset, this paper first leverages web crawlers to obtain the full text of guiding agricul -
+tural policies of the National Rural Revitalization Administration and Central File No. 1 , as
+well as the full text of agricultural policies of Huanghe-Nine provincial Rural Revitalization Bu -
+reau. The collected dataset is then used to fine-tune the ChatGLM 2 - 6 B model by QLoRA and
+基金 项目 ： 国家重点研发计划 “ 面向融合科学场景的应用示范 ” （ 2021 YFF 0704204 ）
+* 通信作者 ： 樊景超 （ E-mail: fanjingchao@caas,cn ）
+ISSN 2096 - 742 X
+CN 10 - 1649 /TP
+文献 CSTR:
+32002 . 14 .jfdc.
+CN 10 - 1649 /
+TP . 2024 . 04 . 010
+文献 DOI ：
+10 . 11871 /jfdc.issn.
+2096 - 742 X. 2024 .
+04 . 010
+页码 ： 116 - 127
+获取全文
+专刊 ： 面向国家科学数据中心的基础软件栈及系统
+Special Issue: Fundamental Software Stack and Systems for National Scientific Data Centers
+数据与计算发展前沿 ， 2024 ， 6 ( 4 )
+第 6 卷 第 4 期 2024 年 8 月
+Vol. 6 No. 4 Aug. 2024
+116
+
+
+--- Page 2 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+conduct model consolidation and quantification. The obtained ChatGLM 2 - 6 B-QLoRA-int 4 model is further com -
+bined with Langchain- Chatchat and local agricultural policy knowledge base to construct an agricultural policy
+question answering system. [ Results ] Questions were asked to ChatGPT, ChatGLM 2 - 6 B, ChatGLM 2 - 6 B-QLO -
+Ra, and our question- and- answer system, respectively, and the answer results were evaluated by expert scoring
+method. Our system is better than ChatGLM 2 - 6 B and CHA TGLM 2 - 6 B-QLORA in the field of agricultural poli -
+cy, and the overall effect is better than ChatGPT. [ Conclusion ] The Q&A system constructed in this research per -
+forms well in the field of agricultural policy, and can ensure the security of proprietary data and realize the local
+deployment of LLM-based Q&A system.
+Keywords: large language model (LLM); agriculture; policy; question answering system; vertical domain
+引 言
+农 业政策是指国家为了促进农业发展而制
+定的一系列政策和措施 ， 体现了国家对农业活
+动的态度 。 2021 年农业农村部引发 《 “ 十四五 ”
+全国农业农村科技发展规划 》 中提出 ， 到 2025 年
+力争技术突破 ， 大幅提升农业领域原始创新能
+力 ， 农 业 科 技 整 体 实 力 稳 居 世 界 第 一 方 阵 。
+2023 年中央一号文件关于农业科技创新要求抓
+紧抓好粮食和农业生产 ， 确保粮食和重要农产
+品稳定安全供给 ， 加强农业科技和装备支撑 ， 奠
+定农业强国建设基础 。 近年来 ， 随着相关政策
+的推进和农业发展 ， 农业利益相关者对于农业
+政策的需求越来越强烈 ， 需要有一个方便快捷
+的方式来获取政策信息和解答疑问 。 但是如何
+让大量的农业信息更好更高效地为农业利益相
+关者服务 ， 仍是农业信息化待解决的难题
+[ 1 ]
+。 传
+统的农业政策宣传和推广方式往往是采用宣传
+册 、 讲座 、 培训班等形式 ， 虽然有一定的效果 ， 但
+是 难 以 满 足 广 大 农 业 利 益 相 关 者 的 个 性 化 需
+求 。 根据 《 中国互联网发展报告 2023 》 蓝皮书数
+据 显 示 ， 截 至 2023 年 6 月 底 ， 中 国 网 民 规 模 达
+10 . 79 亿人 ， 互联网普及率达 76 . 4 % ， 农村地区互
+联网普及率为 60 . 5 % ， 相较于 10 年前网民规模增
+长近 1 倍 。 互联网和智能手机的普及 ， 人们越来
+越依赖线上获取信息和解决问题的方式 。 构建
+农业政策问答系统顺应发展趋势 ， 可以为农业
+利益相关者获取政策信息提供更准确快捷的解
+决方案 ， 有助于提高政策宣传效果 、 促进农 业发
+展和推动农业科技创新 。
+目前 ， 已有多种智能问答系统问世 ， 如 Open
+AI 的 ChatGPT 、 必应的 New Bing 和百度的文心
+一言等 ， 此类问答系统功能强大 ， 但欠缺专业领
+域知识 ， 在垂直领域表现欠佳 ， 而且此类问答系
+统使用的大语言模型的部署及训练成本高昂 ， 对
+硬 件有着非常高的要求 ， 并存在数据泄露风险 。
+现针对特定领域的问答系统 ， 大多选择构建该领
+域的知识图谱 ， 通过对该领域的知识进行结构化
+处理以提高问答的实用性和准确性
+[ 2 ]
+。 现在知识
+图谱在农业领域的应用还较少 ， 用户查询时仍需
+借助传统搜索引擎 ， 还有很大的提升检索效率的
+空间
+[ 2 ]
+。 采用知识图谱构建农业问答系统也存在
+一定的缺陷 ， 如知识图谱构建维护情况会对问答
+系统的准确性和可靠性造成一定影响 ， 模糊问题
+可能会影响知识图谱对问题的理解和回答 ， 以及
+知识图谱的答案可能存在一定的主观性和不确
+定性等问题 。
+针对以上问题 ， 本文构建了结合 ChatGLM 2 -
+6 B 和 LangChain-Chatchat 框架的农业政策问答
+系统 。 通过爬虫获取国家与黄河区域农业政策
+全文 ， 构建农业政策问答数据集 ， 利用该数据集
+对 模型进行 QLoRA 微调及合并量化 ， 然后将得
+到的模型与本地农业政策知识库结合构建农业
+政策问答系统 ， 对问答系统分别进行提问 ， 回答
+结果采用专家打分法进行评价 ， 本文所构建的问
+答系统在农业政策领域表现较好 ， 能确保专有数
+据安全 ， 可以实现基于大语言模型的问答系统区
+域性部署 。
+117
+
+
+--- Page 3 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+1 相关工作
+大语言模型 （ Large Language Models ， LLM ）
+也称大型语言模型 ， 是一种人工智能模型 ， 它们
+在大量的文本数据上进行训练 ， 并且在多种自然
+语言处理任务
+[ 3 - 4 ]
+上都取得了显著的成果 ， 并且表
+现出若干涌现能力
+[ 5 ]
+。 LLM 一般有 3 种类型 ， 分
+别是采用从左到右的语言建模目标训练的自回
+归模型
+[ 6 - 8 ]
+、 通过去噪目标学习双向上下文编码器
+进行自然语言理解的自编码模型
+[ 9 ]
+和同时使用了
+原 始 编 码 器 与 解 码 器 的 序 列 到 序 列 模 型
+[ 1 0 - 12 ]
+。
+LLM 的规模庞大 ， 包含数十亿的参数使得其能
+够学习语言数据中的复杂模式 ， 从而在各种自
+然语言处理任务中表现优异 ， 相较于小模型有
+较为显著的性能提升 ， 并且出现了小模型中不
+存在的能力 ， 如上下文学习等 。 然而 LLM 也存
+在一定的局限性 ， 包括对硬件资源的高要求使
+得开发及运营成本高昂 、 对特定的专业领域知
+识了解不充分以及产生有害幻觉事实
+[ 13 ]
+等 。
+针对 LLM 面对专业领域知识时回答缺乏准
+确性 、 真实性以及产生 “ 幻觉事实 ” 的问题 ， 许多
+工作选择对模型进行微调 ， 令 LLM 具备应对专
+业领域问题的能力 ， 而且对于特定领域的数据集
+而言 ， 微调是不可避免的工作 ， 因为开源大模型
+或者通用大模型通常是在通用语料库上进行预
+训练 ， 难以了解一些私有的特定数据与知识和这
+些特定领域知识的提问和问答的特定逻辑 。 但
+对 LLM 庞大的参数量进行微调成本高昂 ， 如具
+有 650 亿参数规模的语言模型 LLaMA ， 其 16 位
+浮点精度的模型文件大小约 200 多 G ， 对其微调
+需要 780 G 显存 。 全模型微调会重新训练所有
+的模型参数 ， 而且随着预训练模型越来越大 ， 全
+模型微调工作成本也在逐渐增加 。 为了解决这
+一问题 ， 微软在 2021 年提出了 LoRA （ Low-Rank
+Adaptation ， 低秩适应 ） 方法
+[ 14 ]
+。 LoRA 的工作原
+理是冻结预训练的模型权重 ， 并且在 transformer
+架构的每一层注入可训练的秩分解矩阵 ， 大大减
+少了下游任务的可训练参数的数量 。 尽管如此 ，
+对一些参数规模庞大的 LLM 而言利用 LoRA 微
+调成本仍然十分高昂 。 为此 ， 华盛顿大学的 NLP
+小 组 提 出 了 QLoRA 方 法
+[ 15 ]
+， 即 LoRA 的 量 化 版
+本 。 QLoRA 通过冻结 4 位量化预训练语言模型
+将梯度反向传播到低阶适配器 （ LoRA ） ， 可以减
+少内存使用量 ， 足以在单个 48 GB GPU 上微调
+65 B 参数模型 ， 同时保留完整的 16 位微调任务
+性能 。 QLORA 微调方法是第一个能够在单个消
+费 级 GPU 上 微 调 33 B 参 数 模 型 和 在 单 个 专 业
+GPU 上微调 65 B 参数模型的方法 ， 同时不会降
+低相对于完整微调基准的性能 。 QLORA 可以被
+视为一个平衡因素 ， 有助于缩小大公司和拥有消
+费级 GPU 的小团队之间的资源差距 。 QLoRA 可
+以帮助保护专有数据安全 ， 降低数据泄露风险 ，
+同时降低 LLMs 本地部署难度 。
+LangChain （ https://www.langchain.com.cn ） 是
+Harrison Chase 于 2022 年 10 月首次提交的一个
+开源框架 ， 允许开发人员在与人工智能一起工作
+时将 LLM 与外部数据源相结合 ， 该框架目前有
+Python 和 Js 两种版本 。 LangChain 的核心思想是
+将不同的组件 “ 链 ” 在一起以创建更高级的 LLM
+用例 ， 即 LangChain 的主要价值在于组件化和现
+成的链 。 组件化是指为语言模型提供抽象层 ， 以
+及每个抽象层的一组实现 ， 组件是模块化且易于
+使用的 ， 组件支持单独使用 。 现成的链是指结构
+化的组件集合 ， 用于完成特定的高级任务 。 通过
+将模块化的组件链式组合 ， 可以构建一个更完整
+的应用程序 。
+2 问答系统结构分析
+2 . 1 系统结构
+本文所构建的问答系统主要由 LangChain-
+Chatchat 和 ChatGLM 2 - 6 B- QLoRA- 4 bit 模 型 构
+成 ， 系统结构如图 1 所示 。 首先利用农业政策问
+答数据集对 ChatGLM 2 - 6 B 模型进行 QLoRA 微
+调 ， 将微调后得到的模型与 ChatGLM 2 - 6 B 模型
+进 行 合 并 和 量 化 ， 得 到 ChatGLM- 6 B- QLoRA-
+4 bit 模型 。 然后在 LangChain-Chatchat 部分结合
+118
+
+
+--- Page 4 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+本地文档和提问文本 ， 根据提示词模板得到用于
+输入 LLM 的提示词 。 将 LangChain-Chatchat 部
+分 得 到 的 提 示 词 输 入 ChatGLM 2 - 6 B- QLoRA-
+int 4 模型进行提问 ， 最后得到问题的回答 。
+2 . 2 ChatGLM- 6 B 模型
+ChatGLM- 6 B
+[ 16 - 17 ]
+是清华大学知识工程和数据
+挖 掘 小 组 （ Knowledge Engineering Group （ KE G ）
+& Data Mining at Tsinghua University ） 发 布 的 一
+个开源的 、 支持中英双语的对话语言模型 ， 基于
+General Language Model （ GLM ） 架构 ， 具有 62 亿
+参 数 ， GLM 架 构 如 图 2 所 示 。 通 用 语 言 模 型
+（ General Language Model ， GLM ） 是 一 种 基 于 自
+回归空白填充的预训练框架 ， 通过添加 2 D 位置
+编码并允许任意顺序预测跨度来改进空白填充
+预训练 ， 并通过变化空白数量和长度 ， 可以针对
+不 同 类 型 的 任 务 对 GLM 进 行 预 训 练 。 在 跨
+NLU 、 有条件和无条件生成的广泛任务范围内 ，
+GLM 在 相 同 的 模 型 大 小 和 数 据 情 况 下 优 于
+BERT 、 T 5 和 GPT 。 GLM 使用单个 Transformer ，
+并对架构进行了几个修改 ， 包括重新排列了层归
+一化和残差连接的顺序 ， 使用单个线性层进行输
+出标记预测以及用 GeLU 激活函数替换 ReLU 激
+活函数 。
+ChatGLM- 6 B 结合模型量化技术使得该模
+型可以在消费级的显卡上进行本地部署 。 Chat -
+GLM- 6 B 使用了和 ChatGPT 相似的技术 ， 针对中
+文问答和对话进行了优化 。 经过约 1 T 标识符的
+中英双语训练 ， 辅以监督微调 、 反馈自助 、 人类反
+馈 强 化 学 习 等 技 术 的 加 持 ， 62 亿 参 数 的 Chat -
+GLM- 6 B 已 经 能 生 成 相 当 符 合 人 类 偏 好 的 回
+答 。 而 ChatGLM 2 - 6 B 则是 ChatGLM- 6 B 的第二
+代版本 ， 在保留了 ChatGLM- 6 B 对话流畅 、 部署
+门 槛 较 低 等 众 多 优 秀 特 性 的 基 础 之 上 ， Chat -
+GLM 2 - 6 B 引入了如更强大的性能 、 更长的上下
+文长度 、 更高效的推理速度和更低的显存占用等
+新特性 。
+本地文档
+提问
+文本Unstructured
+Loader 类 Text Splitter 文本段落 Embedding
+词向量库Embedding 向量相似度
+相似文本段落 提示词模板 提示词
+ChatGLM2-
+6B-QLoRA-
+int4
+农业政策问答
+数据集 CharGLM2-6B QLoRA
+答案
+问题文本向量
+ChatGLM2-
+6B-QLoRA 量化
+LangChain
+LLM
+图 1 问答系统结构
+Fig. 1 Question answering system architecture
+119
+
+
+--- Page 5 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+2 . 3 QLoRA 微调
+低 秩 自 适 应 （ Low- Rank Adaptation ， 简 称
+LoRA ） 是一种自然语言处理模型微调技术 ， 它冻
+结了预训练的模型权重 ， 并将可训练的秩分解矩
+阵 注入到 Transformer 架构的每一层中 ， 大大减
+少 了 下 游 任 务 的 可 训 练 参 数 数 量 。 QLoRA 使
+用一种新的高精度技术将预训练模型进行 4 -bit
+量化 ， 然后添加一小部分可学习的低秩适配器
+权重
+[ 14 ]
+， 通过量化权重的反向传播来调谐 。 即通
+过冻结的 4 -bit 量化训练模型将梯度反向传播到
+LoRA 中 。 研究表明 ， QLoRA 在一个小的高 质量
+数据集上进行微调 ， 即使使用比以前的 SoT A 更
+小的模型 ， 也会产生很好的结果 。 不同的微调方
+法与内存需求如图 3 所示 ， QLoRA 通过将 Trans -
+former 模型 4 -bit 量化 ， 并使用分页优化器来处理
+内存峰值 ， 从而优于 LoRA 。
+QLoRA 引入了许多创新 ， 包括 4 -bit Normal -
+Float 数据类型 、 双重量化和分页优化器 。 Nor -
+malFloat （ NF ） 数据类型建立在 Quantile Quantiza -
+tion 的基础上 ， Quantile Quantization 是一种信息
+理论上最优的数据类型 ， 通过经验积累分布函数
+估计输入张量的分位数来工作 。 k-bit Normal -
+Float （ NFk ） 数据类型对于零中心正态分布数据
+在 信 息 理 论 上 是 最 优 的 。 双 重 量 化 （ Double
+xL
+All NLP tasks [END] are generation tasks
+All [START] NLP tasks are generation tasks
+图 2 GLM 示意图 （ 省略部分注意力边缘 ）
+Fig. 2 GLM diagram (omit some attention edges)
+CPU
+Base
+Model
+Adapters
+(16 bit)
+Optimizer
+State
+(32 bit)
+微调
+(no Adapters) LoRA QLoRA
+16-bit
+Transformer
+16-bit
+Transformer
+4-bit
+Transformer
+参数更新
+梯度流
+分页流
+图 3 不同的微调方法及其内存需求
+Fig. 3 Different fine-tuning methods and their memory requirements
+120
+
+
+--- Page 6 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+Quantization ） 是对量化常数进行量化以节省额
+外内存的过程 ， 有助于减少量化常数的内存占
+用 。 分页优化器即使用 NVIDIA 统一内存功能 ，
+在 CPU 和 GPU 之间进行自动页到页传输 ， 以便
+在 GPU 偶 尔 内 存 不 足 的 情 况 下 进 行 无 错 误 的
+GPU 处理 。 QLoRA 使用此功能为优化器状态分
+配分页内存 ， 然后在 GPU 内存不足时自动将其
+驱逐到 CPU RAM ， 并在优化器更新步骤中需要
+内 存 时 将 其 分 页 送 回 GPU 内 存 。 使 用 上 述 组
+件 ， QLoRA 使用单个 LoRA 适配器为量化基础模
+型中的单个线性层定义 QLoRA ：
+Y
+B F 1 6
+= X
+B F 1 6
+d o u b l e D e q u a n t ( c
+F P 3 2
+1
+, c
+k - b i t
+2
+, W
+N F 4
+) +
+X
+B F 1 6
+L
+B F 1 6
+1
+L
+B F 1 6
+2
+（ 1 ）
+其中 ， doubleDequant( · ) 定义为 ：
+d o u b u l e D e q u a n t ( c
+F P 3 2
+1
+, c
+k - b i t
+2
+, W
+k - b i t
+)
+= d e q u a n t ( d e q u a n t ( c
+F P 3 2
+1
++ c
+k - b i t
+2
+) , W
+4 b i t
+)
+= W
+B F 1 6
+（ 2 ）
+简而言之 ， QLORA 有一个存储数据类型 （ 通
+常 是 4 - bit NormalFloat ） 和 一 个 计 算 数 据 类 型
+（ 16 -bit BrainFloat ） 。 QLoRA 将存储数据类型降
+级为计算数据类型以执行向前和向后传递 ， 但
+QLoRA 仅计算使用 16 位 BrainFloat 的 LoRA 参
+数的权重梯度 。
+2 . 4 LangChain-Chatchat
+LangChain 是一个用于开发由语言模型驱动
+的应用程序的框架 ， 主要功能包括调用语言模
+型 、 将不同数据源接入到语言模型的交互中 、 允
+许语言模型与运行环境交互 。 LangChain 有六大
+核心模块 ， 分别是代理 、 链 、 索引 、 记忆存储 、 模型
+和提示工程 。 代理是使用 LLM 作为思考工具 ，
+决定当前要做什么 。 通过给代理一系列的工具 ，
+代理根据输入判断用哪些工具可以完成这个目
+标 ， 然后不断的运行工具 ， 来完成目标 。 链允许
+把多个组件组合成一个应用 ， 也可以把一些链组
+合在一起 ， 构建更复杂的链 。 索引可以让文档结
+构化 ， 从而 LLM 可以直接更好的和文档交互 ； 比
+如用于答疑 ， 知识库等 。 Lang Chain 提供的主要
+索引工具包括 Document Loaders 、 Text Splitters 、
+V ectorStores 和 Retrievers 。 记 忆 存 储 工 具 是
+LangChain 提供的管理和操作以前聊天消息的辅
+助工具 。 LangChain 中的模型主要有三类 ， 分别
+是 LLMs 、 聊天模型和文本嵌入模型 。 提示词是
+与模型交互的方式 ， 或者是模型的输入 ， 通过提
+示词可以让模型返回所期望的内容 ， 比如让模型
+按照一定的格式返回数据 。
+结 合 LangChain 构 建 问 答 系 统 主 要 有 两 种
+方式 ， 一种是基于单一文档问答 ， 另一种则是基
+于本地知识库问答 。 基于单一文档问答时 ， 主要
+实现原理是先加载本地文档为文本 ， 将文本按照
+字符 、 长度或语义进行拆分 ， 对文本及问句向量
+化 ， 在文本向量中匹配出与问句向量最相似的 k
+个文本 ， 最后将匹配出的文本作为上下文和问题
+一起添加到 Prompt 中提交给 LLM 生成回答 。
+本文使用的 是基于本地知识库问答 。 基于
+本地知识库问答时 ， 使用的是多个文档上传之后
+形成的知识库 。 首先把本地文件利用 Unstruc -
+tured Loader 类加载进来 ， 对加载进来的文本使
+用 Text Splitter 文本切分器形成文本段落 ， 利用
+Embedding 模 型 进 行 向 量 化 过 程 ， 形 成 词 向 量
+库 。 对用户提问的内容也使用同样的 embedding
+模型来进行文本向量化 ， 把形成的提问向量与向
+量数据库里已有的文段进行匹配 ， 得到 k 个最相
+似的文本 ， 把最相关的内容加入到提示词模板
+中 ， 形成最终要发送给 LLM 的文本 。 基于本地
+知识库的实现原理如图 4 所示 。
+LangChain- Chatchat(https://github.com/chat -
+chat-space/Langchain-Chatchat) 是一款基于 Lang -
+Chain 与 ChatGLM 等大语言模型的本地知识库
+问答应用实现 ， 支持 FaseChat 接入的 ChatGLM-
+6 B 等多款主流 LLMs 、 m 3 e 等多种 Embedding 模
+型以及多种 TextSplitter 分词器 。 这是一种利用
+LangChain 思想实现的基于本地知识库的问答应
+用 ， 目标期望建立一套对中文场景与开源模型支
+持友好 、 可离线运行的知识库问答解决方案 ， 但
+是该项目未涉及微调 、 训练过程 。
+121
+
+
+--- Page 7 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+3 实验步骤与结果分析
+3 . 1 实验环境
+环境配置如表 1 所示 。
+3 . 2 实验数据
+本文的实证研究对象为农业政策 ， 数据主要
+分为两部分 ， 一部分是用于对 ChatGLM 2 - 6 B 进
+行 QLoRA 微调的农业政策问答数据集 ， 另一部
+分是本地的农业政策知识库 。 问答数据集部分
+数据来源于国家乡村振兴局网站所公示政策全
+文 、 黄河九省部分农业政策全文以及如中央一号
+文件此类对农业领域具有指导意义的国家级文
+件文本全文 ， 以这些政策全文文本为基础构建问
+答数据集 ， 最后得到拥有 399 对问答对的农业政
+策问答数据集 。
+3 . 3 实验结果与分析
+首先利用训练数据对 ChatGLM 2 - 6 B 模型进
+行 QLoRA 微调 ， 模型对训练数据学习结果如表 2
+所示 。
+将 QLoRA 微调后得到的模型与 ChatGLM 2 -
+6 B 模 型 进 行 合 并 和 量 化 ， 得 到 ChatGLM 2 - 6 B-
+QLoRA-int 4 模型 ， 并将模型与 LangChain-Chat -
+chat 结合 ， 构建农业政策问答系统 。 可以在左侧
+侧边栏选择知识库问答 ， 并选择所构建的 Chat -
+GLM 2 - 6 B-QLoRA-int 4 模型以及进行知识库配
+置 。 知识库配置可选择知识库以及问答时匹配
+的知识条数 ， 本文选择的是自建的 Agriculture -
+Policy 知识库 ， 匹配知识 3 条 。 系统界面如图 5
+所示 。
+可以在右侧侧边栏进入知识库管理功能 ， 选
+本地文档
+提问
+文本Unstructured
+Loader 类 Text Splitter 文本段落 Embedding
+词向量库Embedding 向量相似度
+相似文本段落 Prompt
+Template Prompt
+LLM
+答案
+问题文本向量
+LangChain
+图 4 基于本地知识库问答的实现原理
+Fig. 4 Implementation principle of Q&A based on local knowledge base
+表 1 实验环境配置信息
+Table 1 Experimental environment configuration
+information
+项目
+操作系统
+GPU
+编程语言
+LangChain-Chatchat 版本
+Fastchat 版本
+分词器
+LLM 模型
+Embeddings 模型
+具体配置
+Linux- 5 . 15 . 120 +-x 86 _ 64 -with-glibc 2 . 35
+Tesla T 4
+Python 3 . 10 . 12
+0 . 2 . 6
+0 . 2 . 31
+ChineseRecursiveTextSplitter
+ChatGLM 2 - 6 B-QLoRA-int 4
+m 3 e-base@cuda
+122
+
+
+--- Page 8 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+择或者新建知识库 。 本文实验选择由国家乡村
+振兴局截至 2023 年 11 月 10 日的全部政策全文
+文本构成的名为 AgriculturePolicy 的知识库 ， 如
+图 6 所示 。 知识库管理界面允许上传知识库文
+件 ， 以及依据源文件重建向量库等功能 ， 如图 7
+所示 。
+表 2 微调前后回答对比
+Table 2 Comparison of answers before and after fine-tuning
+问题
+到 2025 年 ， 农业
+科 技 整 体 实 力
+力 争 达 到 什 么
+水平 ？
+回答
+QLoRA 微调前
+根据 《 农业科技发展中心 “ 十四五 ” 规划 》 ， 到 2025
+年 ， 农业科技整体实力力争达到国内农业科技实
+力排名前 5 位水平 。 这意味着 ， 农业科技在农业
+领域的研究 、 应用和创新能力将得到显著提升 ， 成
+为农业领域的重要技术支撑
+QLoRA 微调后
+到 2025 年 ， 农业科技整体实力力
+争达到世界第一方阵 ， 生物育种 、
+农 业 数 字 化 、 动 物 疫 苗 等 领 域 居
+世界领先水平
+数据集数据
+到 2025 年 ， 农业科技整体
+实力力争达到世界第一方
+阵 ， 生物育种 、 农业 5 G 应
+用 、 动物疫苗等领域居世
+界领先水平
+图 5 系统知识库问答界面
+Fig. 5 System knowledge base Q&A interface
+图 6 知识库管理界面
+Fig. 6 Knowledge base management interface
+123
+
+
+--- Page 9 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+3 . 4 问答系统评价
+本文采用专家评分法对问答系统的回答进
+行评价 ， 选择 20 道农业政策问题分别输入 Chat -
+GPT 、 ChatGLM 2 - 6 B 、 ChatGLM 2 - 6 B- QLoRA 和
+农业政策问答系统生成回答 。 将回答整理成问
+卷交给专家进行评估 ， 让专家对回答进行打分 ，
+并要求将回答对题目的理解程度纳入评分标准
+中 。 本文实验参与评分的专家包括农业政策 、 农
+业 信 息 工 程 技 术 以 及 农 业 细 分 领 域 的 7 位 专
+家 。 每个模型均由 7 位专家对 20 个问题进行评
+价 ， 即每个模型有 140 条评价 ， 通过对专家评分
+进行统计后得到总体评分结果如图 8 所示 。 根
+据 总体评分结果可知 ， ChatGPT 整体评价最优 ， 其
+次是农业政策问答系统 ， QLoRA 微调后的 Chat -
+GLM 2 - 6 B-QLoRA 模型表现优于 ChatGLM 2 - 6 B
+模型 ， 但逊色于农业政策问答系统 。
+由于 7 位专家均来自不同领域 ， 对问题的回
+答有着不同的关注点 ， 每位专家对回答评分的分
+数区间略有差异 ， 因此对专家评分结果进行标准
+化处理 ， 得到具体评分情况如图 9 ~ 12 所示 。 通
+过对标准化处理后的评分结果进行分析可以得
+知 ， ChatGPT 表现并不出众 ， 得到的分数大多位
+于 均 值 附 近 ， 即 没 有 特 别 优 秀 的 回 答 ； Chat -
+GLM 2 - 6 B 表现逊色于 ChatGPT ， 部分问题的回
+答 7 位 专 家 均 给 出 了 较 低 的 分 数 ； ChatGLM 2 -
+6 B- QLoRA 则 评 分 的 最 低 分 高 于 ChatGPT 和
+ChatGLM 2 - 6 B ， 且高分数量更多 ， 没有集中出现
+全是低分的情况 ； 农业政策问答系统整体而言表
+现与 ChatGLM 2 - 6 B-QLoRA 相近 ， 但是最高评价
+图 7 知识库文件管理功能
+Fig. 7 Knowledge base file management function
+81.5
+82.0
+82.5
+83.0
+83.5
+84.0
+84.5
+总体评分结果
+ChatGPT ChatGLM2-6B-QLoRA
+农业政策问答系统
+ChatGLM2-6B
+图 8 总体评分结果
+Fig. 8 Overall rating result
+−8
+−7
+−6
+−5
+−4
+−3
+−2
+−1
+0
+1
+2
+3
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+ChatGPT
+专家1 专家2 专家3 专家4 专家5 专家6 专家7
+图 9 专家评分结果 （ ChatGPT ）
+Fig. 9 Expert Rating Results (ChatGPT)
+124
+
+
+--- Page 10 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+高于 ChatGLM 2 - 6 B-QLoRA ， 低于 - 2 的数量也少
+于 ChatGLM 2 - 6 B-QLoRA 。
+对回答进行分析时发现对于一些模糊问题 ，
+农 业 政 策 问 答 系 统 的 理 解 和 表 现 优 于 Chat -
+GLM 2 - 6 B- QLoRA ， 证 明 结 合 LangChain- Chat -
+chat 项目能提升 LLM 对模糊问题的理解能力 ， 但
+就总体评价而言无法证明对评价结果存在显著
+正面影响 。 农业政策问答系统的评价较于 Chat -
+GLM 2 - 6 B-QLoRA 而言更为统一 ， 根据图 11 不难
+看出不同专家对 ChatGLM 2 - 6 B-QLoRA 每道题
+的评分非常少见统一的高于均值或低于均值 ， 然
+而图 12 显示农业政策问答系统中虽然每道题专
+家的评价更加统一 ， 但却出现了 7 位专家均给出
+了低于均值分数的题目 。 证明结合 LangChain
+虽然能提高 LLM 对问题的理解能力 ， 但是也存
+在往错误方向理解的可能性 。 此外 ， 导致未经专
+业领域训练的大模型如 ChatGPT 的回答低评价
+的原因除了幻觉事实 ， 还存在完全无法回答问题
+的情况 ， 如表 3 所示 。
+综上 ， ChatGPT 整体评价最优 ， 农业政策问
+答系统次之 ， ChatGLM 2 - 6 B 评价最低 ， 但是就实
+际回答而言 ， ChatGPT 无法回答具体政策相关内
+容存在较大缺陷 ， 综合考虑下认为农业政策问答
+系统在专业领域问答上表现较好 。
+4 总结与展望
+本文结合 ChatGLM 2 - 6 B 、 QLoRA 微调技术
+和 LangChain-Chatchat 项目 ， 建立农业政策问答
+数 据 集 及 农 业 政 策 知 识 库 ， 实 现 了 本 地 部 署
+QLoRA 微 调 ChatGLM 2 - 6 B 构 建 农 业 政 策 问 答
+系统 。 初步验证了该问答系统构建方法在农业
+政策领域的实现可能 ， 展现 LLM 本地化部署的
+−4
+−3
+−2
+−1
+0
+1
+2
+3
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+ChatGLM2-6B
+专家1 专家2 专家3 专家4 专家5 专家6 专家7
+图 10 专家评分结果 （ ChatGLM 2 - 6 B ）
+Fig. 10 Expert Rating Results (ChatGLM 2 - 6 B)
+−3
+−2
+−1
+0
+1
+2
+3
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+ChatGLM2-6B-QLoRA
+专家1 专家2 专家3 专家4 专家5 专家6 专家7
+图 11 专家评分结果 （ ChatGLM 2 - 6 B-QLoRA ）
+Fig. 11 Expert Rating Results (ChatGLM 2 - 6 B-
+QLoRA)
+−3
+−2
+−1
+0
+1
+2
+3
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+农业政策问答系统
+专家1 专家2 专家3 专家4 专家5 专家6 专家7
+图 12 专家评分结果 （ 农业政策问答系统 ）
+Fig. 12 Expert Rating Results (Agricultural Policy
+Q&A System)
+表 3 异常回答示例
+Table 3 Exception answer example
+问题
+在 优 化 产
+品 结 构 方
+面 ， 四 川
+省 将 重 点
+培 育 哪 些
+特 色 农 产
+品品牌 ？
+ChatGPT 回答
+我无法提供四川省最新
+的特色农产品品牌培育
+计划 。 政府在不同时间
+可能会调整政策 ， 因此建
+议您查阅最新的四川省
+农业发展规划 、 产业政策
+文件或相关新闻以获取
+最准确的信息 。 您可以
+浏览四川省政策官方网
+站 、 农业部门网站或当地
+新闻媒体网站 ， 或者联系
+当地农业部门了解最新
+的政策和计划
+政策原文
+《 中 共 四 川 省 委 、 四 川
+省 人 民 政 府 关 于 以 绿
+色 发 展 理 念 引 领 农 业
+供 给 侧 结 构 性 改 革 切
+实 增 强 农 业 农 村 发 展
+新动力的意见 （ 2017 年
+1 月 13 日 ） 》 ：
+（ 三 ） 积 极 发 展 特 色 个
+性 农 产 品 。 立 足 生 态
+环境 、 气候特点和区域
+经济发展定位 ， 积极发
+展川菜 、 川果 、 川茶 、 川
+药 等 “ 川 字 号 ” 特 色 个
+性农产品……
+125
+
+
+--- Page 11 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+未来前景 。
+通过对实验结果进行分析不难发现 ， 虽然结
+合 LangChain-Chatchat 能提升 LLM 对模糊问题
+的理解能力 ， 但农业政策问答系统在问答任务中
+表现出了对提示的敏感性 ， 具体来说 ， 结合 Lang -
+Chain-Chatchat 仅仅是改变了问题的提示 ， 所构
+建的农业政策系统内部使用的模型仍是 4 bit 量
+化后的 ChatGLM 2 - 6 B-QLoRA 模型 ， 然而专家评
+分结果中部分题目 ChatGLM 2 - 6 B-QLoRA 模型
+的评价有正有负 ， 而本文所构建的农业政策系统
+得到的全是负评价 ， 回答差异较大 。 简而言之 ，
+对于具有相同含义而表达方式不同的输入 ， 相同
+的 LLM 会提供不同的答案 。 对提示的敏感性对
+LLM 的鲁棒性评估或许会造成较大影响 ， 未来
+对 LLM 的鲁棒性进行评估时需要探索更可靠的
+评价方式 。 此外 ， 采用 LangChain-Chatchat 构建
+提示词模板可使回答得到的评价更为统一 ， 但仍
+存在令模型以错误的方式理解问题的可能性 ， 未
+来考虑对如何构建可以使 LLM 更好地正确理解
+问题的提示方式开展研究 。
+利益冲突声明
+所有作者声明不存在利益冲突关系 。
+参考文献
+[ 1 ] 白 皓然 , 孙伟浩 , 金宁 , 等 . 基于改进 Bi-LSTM-CRF
+的农业问答系统研究 [J]. 中国农机化学报 , 2023 , 44
+( 2 ): 99 - 105 .
+[ 2 ] 王东升 , 王卫民 , 王石 , 等 . 面向限定领域问答系统
+的自然语言理解方法综述 [J]. 计算机科学 , 2017 , 44
+( 8 ): 1 - 8 .
+[ 3 ] GUU K, LEE K, TUNG Z, et al. Retrieval augment -
+ed language model pre- training[C]//Proceedings of
+the 37 th International Conference on Machine Learn -
+ing, Vienna. New York:PMLR, 2020 : 3929 - 3938 .
+[ 4 ] CHOWDHERY A, NARANG S, DEVLIN J, et al.
+PaLM: scaling language modeling with pathways[J/
+O L]. ar Xiv: 2204 . 02311 , 20 22 . [ 2023 . 11 . 20 ]https:// do i .
+org/ 10 . 48550 /arXiv. 2204 . 02311 .
+[ 5 ] WEI J, TAY Y , BOMMASANI R, et al. Emergent ab il -
+ities of large language models[J/OL]. arXiv: 2206 .
+0768 2 , 2022 . [ 2023 - 11 - 20 ] https://doi.org/ 10 . 48550 /
+arXiv. 2206 . 07682 .
+[ 6 ] RADFORD A, NARASIMHAN K, SALIMANS T, et
+al. Improving language understanding by generative
+pre- training[J/OL]. Preprint, 2018 . [ 2023 - 11 - 20 ] https://
+api.semanticscholar.org/CorpusID: 49313245 .
+[ 7 ] RADFORD A, WU J, CHILD R, et al. Language
+models are unsupervised multitask learners[J]. Ope -
+nAI Blog, 2019 , 1 ( 8 ): 9 .
+[ 8 ] BROWN T, MANN B, RYDER N, et al. Language
+models are few- shot learners[J]. Advances in neural
+inf ormation processing systems, 2020 , 33 : 1877 - 19 01 .
+[ 9 ] D EVLIN J, CHANG M W, LEE K, et al. Bert: Pre-
+training of deep bidirectional transformers for lan -
+guage understanding[J/OL]. arXiv preprint arX iv:
+1 810 . 04805 , 201 8 . [ 2023 - 11 - 20 ] https://doi.org/ 10 . 4 8
+550 /arXiv. 1810 . 04805 .
+[ 10 ] SONG K, TAN X, QIN T, et al. Mass: Masked se -
+quence to sequence pre-training for language genera -
+tion[J/OL]. arXiv preprint arXiv: 1905 . 02450 , 2019 .
+[ 2 023 - 11 - 20 ] https://doi.org/ 10 . 48550 /arXiv . 1905 . 024 50 .
+[ 11 ] LEWIS M, LIU Y , GOY AL N, et al. Bart: Denoising
+sequence- to- sequence pre- training for natural lan -
+guage generation, translation, and comprehension[J/
+OL]. arXiv preprint arXiv: 1910 . 13461 , 2019 . [ 2023 -
+11 - 20 ] https://doi.org/ 10 . 48550 /arXiv. 1910 . 13461 .
+[ 12 ] BI B, LI C, WU C, et al. Palm: Pre-training an autoen -
+coding&autoregressive language model for context-
+c onditioned generation[J/OL]. arXiv preprint arX -
+iv: 2004 . 07159 , 2020 . [ 2023 - 11 - 20 ] https://doi.org/
+10 . 48550 /arXiv. 2004 . 07159 .
+[ 13 ] MAYNEZ J, NARAY AN S, BOHNET B, et al. On
+faithfulness and factuality in abstractive summariza -
+tion[J/OL]. arXiv: 2005 . 00661 , 2020 . [ 2023 - 11 - 20 ]
+https://doi.org/ 10 . 48550 /arXiv. 2005 . 00661 .
+[ 14 ] HU E J, SHEN Y , WALLIS P , et al. Lora: Low- rank
+adaptation of large language models[J/OL]. arXiv
+preprint arXiv: 2106 . 09685 , 2021 . [ 2023 - 11 - 20 ] https:
+//doi.org/ 10 . 48550 /arXiv. 2106 . 09685 .
+[ 15 ] DETTMERS T, PAGNONI A, HOLTZMAN A, et al.
+Qlora: Efficient finetuning of quantized llms[J/OL].
+arXiv preprint arXiv: 2305 . 14314 , 2023 . [ 2023 - 11 -
+126
+
+
+--- Page 12 ---
+数据与计算发展前沿 ， 2024 ， 6 ( 4 ) 韦一金 等 ： 基于 ChatGLM 2 - 6 B 的农业政策问答系统
+20 ] https://doi.org/ 10 . 48550 /arXiv. 2305 . 14314 .
+[ 16 ] ZENG A, LIU X, DU Z, et al. Glm- 130 b: An open bi -
+lingual pre- trained model[J/OL]. arXiv preprint arX -
+iv : 2210 . 02414 , 2022 . [ 2023 - 11 - 20 ] https://doi.org/ 10 .
+48550 /arXiv. 2210 . 02414 .
+[ 17 ] DU Z, QIAN Y , LIU X, et al. Glm: General language
+model pretraining with autoregressive blank infilling
+[J /OL]. arXiv preprint arXiv: 2103 . 10360 , 2021 . [ 2023 -
+11 - 20 ] https://doi.org/ 10 . 48550 /arXiv. 2103 . 103 60 .
+收稿日期 ： 2023 - 11 - 23
+韦一金 ， 中国农业科学院农业信息
+研究所 ， 硕士研究生 ， 研究方向为农
+业政策与深度学习 。
+本 文中主要工作为提出研究思路 ， 设
+计实验方案 ， 构建系统 ， 撰写论文 。
+WEI Yijin is a master ’ s student at
+the Agriculture Information Institu -
+tion of CAA. Her research interests include agricultural pol -
+icy and deep learning.
+In this paper, she is responsible for proposing research
+ideas, designing experimental schemes, building systems,
+and writing the paper.
+E-mail: weiyijin 0816 @ 163 .com
+樊景超 ， 中国 农业科学院农业信息
+研究所 ， 博士 ， 副研究员 ， 研究方向
+为农业大数据 。
+本文中主要工作为设计研究方案 ，
+实验结果的解读与分析 。
+FAN Jingchao, Ph.D., is an associate
+researcher at the Agriculture Informa -
+tion Institution of CAA. His research interests include agri -
+cultural Big Data.
+In this paper, he is responsible for designing the research
+scheme and interpreting and analyzing the experimental re -
+sults.
+E-mail: fanjingchao@caas.cn
+引文格式 ： 韦一金 , 樊景超 . 基于 ChatGLM 2 - 6 B 的农业政策问答系统 [J]. 数据与计算发展前沿 , 2024 , 6 ( 4 ): 116 - 127 . DOI: 10 . 11871 /
+jfdc.issn. 2096 - 742 X. 2024 . 04 . 010 . https://cstr.cn/ 32002 . 14 .jfdc.CN 10 - 1649 /TP . 2024 . 04 . 010 .
+WEI Yijin, FAN Jingchao. An Agricultural Policy Question Answering System Based on ChatGLM 2 - 6 B[J]. Frontiers of Data & Comput -
+ing, 2024 , 6 ( 4 ): 116 - 127 . DOI: 10 . 11871 /jfdc.issn. 2096 - 742 X. 2024 . 04 . 010 . https://cstr.cn/ 32002 . 14 .jfdc.CN 10 - 1649 /TP . 2024 . 04 . 010 .
+127

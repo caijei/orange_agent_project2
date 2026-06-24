@@ -557,9 +557,9 @@ if __name__ == '__main__':
     #processor.generate_chunks_from_markdown_directory(markdown_dir)
 
     # 第二步：手动修改 chunks 目录中的 json 后，再取消下面这行注释执行入库。会删除原有数据库
-    #processor.build_vectorstore_from_chunk_directory(chunk_dir)
+    processor.build_vectorstore_from_chunk_directory(chunk_dir)
 
     # 第一步：新 Markdown → 新 JSON（不动旧 JSON）
-    processor.add_chunks_from_markdown('../docs_clean/markdown')
+    #processor.add_chunks_from_markdown('../docs_clean/markdown')
     # 新增知识库（不影响已有数据）
-    processor.add_documents_to_vectorstore('./chunks')
+    #processor.add_documents_to_vectorstore('./chunks')
